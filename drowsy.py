@@ -11,7 +11,7 @@ import playsound
 from imutils import face_utils
 import imutils
 import time
-import argparse
+
 
 #audio file path
 #D:\drowst detect\alarm.wav
@@ -29,6 +29,7 @@ def eye_aspect_ratio(eye):
 
 eyethresh=0.3
 eyecons=48
+eyecons1=150
 
 count=0
 alarm_status=False
@@ -41,43 +42,74 @@ predictor=dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 (rstart,rend)=face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
 c=cv2.VideoCapture(0)
 flag=0
-
+c2=0
 while True:
+
     ret,frame=c.read()
     frame=imutils.resize(frame,width=450)
     gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
     obj= detector(gray,0)
-    for s in obj:
-        shape=predictor(gray,s)
-        shape=face_utils.shape_to_np(shape)
-        leftEye=shape[lstart:lend]
-        rightEye=shape[rstart:rend]
-        lear=eye_aspect_ratio(leftEye)
-        rear=eye_aspect_ratio(rightEye)
-        ear=(lear+rear)/2.0
-        leftEyeHull=cv2.convexHull(leftEye)
-        rightEyeHull=cv2.convexHull(rightEye)
-        cv2.drawContours(frame,[leftEyeHull],-1,(255,255,255),1)
-        cv2.drawContours(frame, [rightEyeHull], -1, (255, 255, 255), 1)
-        if ear<eyethresh:
-            count+=1
-            print(count)
+    '''if obj==None:
+        print("AHBDJHGH")
+        count+=1
+        if count>=eyecons:
+            if not alarm_status:
+                alarm_status=True
+                t1=Thread(target=alarm(),daemon=True)
+                t.start()
+            cv2.putText(frame, "*****************ALERT****************", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0, 0, 255), 2)
+    count=0
+    alarm_status=False'''
+    if obj:
+        for s in obj:
+            shape=predictor(gray,s)
+            shape=face_utils.shape_to_np(shape)
+            leftEye=shape[lstart:lend]
+            rightEye=shape[rstart:rend]
+            lear=eye_aspect_ratio(leftEye)
+            rear=eye_aspect_ratio(rightEye)
+            ear=(lear+rear)/2.0
+            leftEyeHull=cv2.convexHull(leftEye)
+            rightEyeHull=cv2.convexHull(rightEye)
+            cv2.drawContours(frame,[leftEyeHull],-1,(255,255,255),1)
+            cv2.drawContours(frame, [rightEyeHull], -1, (255, 255, 255), 1)
+            if ear<eyethresh:
+                c2=0
+                count+=1
+                print(f"count=={count}")
 
-            if count>=eyecons:
-                if not alarm_status:
-                    alarm_status=True
-                    t = Thread(target=alarm, daemon=True)
-                    t.start()
-                cv2.putText(frame,"*****************ALERT****************",(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
-        else:
-            count=0
-            alarm_status=False
+                if count>=eyecons:
+                    if not alarm_status:
+                        alarm_status=True
+                        t = Thread(target=alarm, daemon=True)
+                        t.start()
+                        print("*****************ALERT****************")
+                    cv2.putText(frame,"*****************ALERT****************",(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+            else:
+                count=0
+                alarm_status=False
+
+
+    else:
+        count=0
+        c2+=1
+        print(f"c2=={c2}")
+        if c2>=eyecons1:
+            if not alarm_status:
+                alarm_status = True
+                t = Thread(target=alarm, daemon=True)
+                t.start()
+                print("Where are you looking")
+            cv2.putText(frame, "Where are you looking", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                        (0, 0, 255), 2)
+            c2=0
+        alarm_status=False
 
     cv2.imshow("Frame",frame)
     key=cv2.waitKey(1) & 0xFF
     if key==ord('q'):
         break
 cv2.destroyAllWindows()
-c.stop()
+c.release()
 
 
